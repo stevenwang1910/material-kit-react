@@ -13,6 +13,7 @@ import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGl
 import { UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 
 import { usePopover } from '@/hooks/use-popover';
+import { ThemeToggle } from '@/components/core/theme-toggle/theme-toggle';
 
 import { MobileNav } from './mobile-nav';
 import { UserPopover } from './user-popover';
@@ -67,6 +68,7 @@ export function MainNav(): React.JSX.Element {
                 </IconButton>
               </Badge>
             </Tooltip>
+            <ThemeToggle size="medium" />
             <Avatar
               onClick={userPopover.handleOpen}
               ref={userPopover.anchorRef}
