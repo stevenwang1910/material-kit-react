@@ -1,6 +1,7 @@
 'use client';
 
 import type { User } from '@/types/user';
+import { logAuditEntry } from '@/lib/audit-logger-client';
 
 function generateToken(): string {
   const arr = new Uint8Array(12);
@@ -37,12 +38,22 @@ export interface ResetPasswordParams {
 }
 
 class AuthClient {
-  async signUp(_: SignUpParams): Promise<{ error?: string }> {
+  async signUp(params: SignUpParams): Promise<{ error?: string }> {
     // Make API request
 
     // We do not handle the API, so we'll just generate a token and store it in localStorage.
     const token = generateToken();
     localStorage.setItem('custom-auth-token', token);
+
+    // Log audit entry
+    await logAuditEntry({
+      eventType: 'AUTH_SIGN_UP',
+      actor: {},
+      action: 'signUp',
+      resource: 'userAuthentication',
+      status: 'success',
+      details: { credentialsType: 'password', email: params.email },
+    });
 
     return {};
   }
@@ -58,11 +69,30 @@ class AuthClient {
 
     // We do not handle the API, so we'll check if the credentials match with the hardcoded ones.
     if (email !== 'sofia@devias.io' || password !== 'Secret1') {
+      // Log failed sign in
+      await logAuditEntry({
+        eventType: 'AUTH_SIGN_IN_FAILED',
+        actor: {},
+        action: 'signIn',
+        resource: 'userAuthentication',
+        status: 'failure',
+        details: { credentialsType: 'password', email, error: 'Invalid credentials' },
+      });
       return { error: 'Invalid credentials' };
     }
 
     const token = generateToken();
     localStorage.setItem('custom-auth-token', token);
+
+    // Log successful sign in
+    await logAuditEntry({
+      eventType: 'AUTH_SIGN_IN',
+      actor: {},
+      action: 'signIn',
+      resource: 'userAuthentication',
+      status: 'success',
+      details: { credentialsType: 'password', email },
+    });
 
     return {};
   }
@@ -89,7 +119,20 @@ class AuthClient {
   }
 
   async signOut(): Promise<{ error?: string }> {
+    // Get current user before signing out
+    const { data: user } = await this.getUser();
+    
     localStorage.removeItem('custom-auth-token');
+
+    // Log sign out
+    await logAuditEntry({
+      eventType: 'AUTH_SIGN_OUT',
+      actor: user ? { userId: user.id } : {},
+      action: 'signOut',
+      resource: 'userAuthentication',
+      status: 'success',
+      details: {},
+    });
 
     return {};
   }

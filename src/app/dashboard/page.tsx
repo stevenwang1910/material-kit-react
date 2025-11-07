@@ -4,6 +4,8 @@ import Grid from '@mui/material/Grid';
 import dayjs from 'dayjs';
 
 import { config } from '@/config';
+import { auditLogger } from '@/lib/audit-logger';
+import { cookies } from 'next/headers';
 import { Budget } from '@/components/dashboard/overview/budget';
 import { LatestOrders } from '@/components/dashboard/overview/latest-orders';
 import { LatestProducts } from '@/components/dashboard/overview/latest-products';
@@ -15,7 +17,26 @@ import { Traffic } from '@/components/dashboard/overview/traffic';
 
 export const metadata = { title: `Overview | Dashboard | ${config.site.name}` } satisfies Metadata;
 
-export default function Page(): React.JSX.Element {
+export default async function Page(): Promise<React.JSX.Element> {
+  // Log dashboard access
+  const token = cookies().get('custom-auth-token')?.value;
+  
+  // In a real implementation, we would get the user ID from the token
+  // For now, we'll use a dummy user ID if token exists
+  const userId = token ? 'USR-000' : undefined;
+  
+  await auditLogger.log({
+    eventType: 'DASHBOARD_ACCESS',
+    actor: {
+      userId,
+      ip: 'unknown', // IP will be added by API route
+      userAgent: 'unknown', // User agent will be added by API route
+    },
+    action: 'access',
+    resource: 'dashboard',
+    status: 'success',
+    details: { page: 'overview' },
+  });
   return (
     <Grid container spacing={3}>
       <Grid
